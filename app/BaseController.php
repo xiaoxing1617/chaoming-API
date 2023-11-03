@@ -53,6 +53,7 @@ abstract class BaseController
         "Index/getClassList",  //获取课程列表
         "Index/getClassDetails",  //获取课程详情
         "Index/brushClass",  //刷课
+        "Index/brushTask",  //刷作业
     ];
 
     /**
