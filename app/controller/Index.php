@@ -29,7 +29,7 @@ class Index extends BaseController
 
         //初次获取答案
         if($this->getTaskAnswer($course_id,$open_id,$id,$token,$school_host,$is_not_submit,$msg,$answer)){
-            return $this->error($msg);
+            return $this->success($answer);
         }else{
             return $this->error($answer);
         }
