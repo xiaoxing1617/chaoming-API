@@ -49,6 +49,8 @@ abstract class BaseController
      * @var string[]
      */
     protected $login_check_routes = [
+        "Index/getMeTestList",  //查看我的考试列表
+        "Index/viewTestAnswer",  //查看试卷答案
         "User/getUserInfo",  //获取登录信息
         "Index/getClassList",  //获取课程列表
         "Index/getClassDetails",  //获取课程详情
