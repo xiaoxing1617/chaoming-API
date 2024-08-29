@@ -5,6 +5,7 @@ namespace app\controller;
 
 
 use app\BaseController;
+use app\common\JwtAuth;
 
 class User extends BaseController
 {
@@ -40,8 +41,7 @@ class User extends BaseController
 
         $res = $this->loginFun($type,$account,$password,$school_host,$data);
         if($res){
-            $token = md5(time() . rand(1000,9999) . rand(1000,9999) . rand(1000,9999));
-            $this->redis->tag($this::USER_TOKEN_KEY_PREFIX)->set($this::USER_TOKEN_KEY_PREFIX.$token,$data['id'],60 * 60 * 24);  //1天后过期
+            $token = JwtAuth::createToken($data['uid']);
             $data['XY_SYSTEM_USER_TOKEN'] = $token;
             $data['password'] = md5($data['password']);
             return $this->success("登录成功",$data);

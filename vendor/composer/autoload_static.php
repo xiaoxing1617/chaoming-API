@@ -53,6 +53,10 @@ class ComposerStaticInitfb86afe4f6a36ccc433f73071041f31a
             'League\\Flysystem\\Cached\\' => 24,
             'League\\Flysystem\\' => 17,
         ),
+        'F' => 
+        array (
+            'Firebase\\JWT\\' => 13,
+        ),
         'C' => 
         array (
             'Carbon\\' => 7,
@@ -139,6 +143,10 @@ class ComposerStaticInitfb86afe4f6a36ccc433f73071041f31a
         'League\\Flysystem\\' => 
         array (
             0 => __DIR__ . '/..' . '/league/flysystem/src',
+        ),
+        'Firebase\\JWT\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
         'Carbon\\' => 
         array (

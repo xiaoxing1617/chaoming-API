@@ -3,6 +3,8 @@ declare (strict_types = 1);
 
 namespace app;
 
+use app\common\JwtAuth;
+use app\model\User;
 use think\App;
 use think\exception\ValidateException;
 use think\Validate;
@@ -88,16 +90,16 @@ abstract class BaseController
 
         $str = $this->request->controller()."/".$this->request->action();
         if(in_array($str,$this->login_check_routes)){
-            $token = $this->request->param("token","");  //token
-            $user_id = $this->redis->get($this::USER_TOKEN_KEY_PREFIX.$token);
+            $token = $this->request->header('Authorization');  //token
+            $user_id = JwtAuth::verifyToken($token);
             if(!$user_id || empty($user_id)){
                 exit($this->error("token不存在或已过期"));
             }
-            $user = $this->redis->get($this::USER_KEY_PREFIX.$user_id);
+            $user = User::getByUid($user_id);
             if(!$user || empty($user)){
                 exit($this->error("token对应的用户ID不存在或已被删除"));
             }
-            $this->user = json_decode($user,true);
+            $this->user = $user->toArray();
         }
     }
 
@@ -173,6 +175,22 @@ abstract class BaseController
         }else{
             $get_data['account'] = $account;
         }
+
+        $school_list = $this->redis->get($this::CONF_KEY_PREFIX . "school_list");
+        if($school_list && !empty($school_list) && $school_list_arr = json_decode($school_list,true)){
+            $result = array_filter($school_list_arr, function($item) use ($school_host) {
+                return $item['domain'] === $school_host;
+            });
+            if(count($result)===1){
+                $school_id = reset($result)['id'];
+            }else{
+                $data = "该学校未收录，请联系管理员处理";
+                return false;
+            }
+        }else{
+            $data = "请重新选择学校";
+            return false;
+        }
         $response = $this->curl_get("https://api.jinkex.com/edu/v1/student/login",$get_data);
 
         // 处理响应
@@ -181,23 +199,34 @@ abstract class BaseController
             $parsed_response = json_decode($response, true);
             if ($parsed_response !== null) {
                 if(intval($parsed_response['code']) === 0){
-                    $this->user = $parsed_response['data'];
-                    $this->user['school_host'] = "";
-                    $this->user['school_id'] = 0;
-                    $this->user['password'] = $password;
-
-                    $school_list = $this->redis->get($this::CONF_KEY_PREFIX . "school_list");
-                    if($school_list && !empty($school_list) && $school_list_arr = json_decode($school_list,true)){
-                        foreach ($school_list_arr as $item){
-                            if($item['domain'] == $school_host){
-                                $this->user['school_id'] = $item['id'];
-                                $this->user['school_host'] = $item['domain'];
-                            }
+                    $parsed_response['data']['school_host'] = $school_host;
+                    $parsed_response['data']['school_id'] = $school_id;
+                    $add = User::buildAddArr($parsed_response['data'],$password);
+                    if(!is_array($add)){
+                        $data = $add;
+                        return false;
+                    }
+                    $user = User::getByUid($add['uid']);
+                    if(!$user){
+                        $add['user_create_time'] = date("Y-m-d H:i:s");
+                        $res = User::create($add);
+                        if($res){
+                            $data = $res->toArray();
+                            return true;
+                        }else{
+                            $data = "用户入库失败";
+                            return false;
+                        }
+                    }else{
+                        $add['id'] = $user['id'];
+                        if($user->save($add)){
+                            $data = $add;
+                            return true;
+                        }else{
+                            $data = "用户信息更新失败";
+                            return false;
                         }
                     }
-                    $this->redis->tag($this::USER_KEY_PREFIX)->set($this::USER_KEY_PREFIX.$this->user['id'],json_encode($this->user));
-                    $data = $this->user;
-                    return true;
                 }else{
                     $data = $parsed_response['msg'];
                     return false;
