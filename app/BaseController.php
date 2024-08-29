@@ -91,13 +91,16 @@ abstract class BaseController
         $str = $this->request->controller()."/".$this->request->action();
         if(in_array($str,$this->login_check_routes)){
             $token = $this->request->header('Authorization');  //token
+            if(empty($token)){
+                exit($this->error("请先登录"));
+            }
             $user_id = JwtAuth::verifyToken($token);
             if(!$user_id || empty($user_id)){
-                exit($this->error("token不存在或已过期"));
+                exit($this->error("请重新登录"));
             }
             $user = User::getByUid($user_id);
             if(!$user || empty($user)){
-                exit($this->error("token对应的用户ID不存在或已被删除"));
+                exit($this->error("登录用户不存在或已被删除"));
             }
             $this->user = $user->toArray();
         }
