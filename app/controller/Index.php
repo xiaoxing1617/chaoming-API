@@ -3,8 +3,7 @@
 namespace app\controller;
 
 use app\BaseController;
-use app\common\JwtAuth;
-use app\model\User;
+use app\common\WxApplet;
 use app\Request;
 
 class Index extends BaseController
@@ -20,6 +19,40 @@ class Index extends BaseController
         header("HTTP/1.1 302 Found");
         header("Location: ".$url);
         exit();
+    }
+
+    /**
+     * 访问程序
+     */
+    public function access(){
+        $loginCode = $this->request->param("loginCode");
+        $systemInfo = $this->request->param("systemInfo",[]);
+        $locationInfo = $this->request->param("locationInfo",[]);
+
+        $WxApplet = new WxApplet();
+        $auth = $WxApplet->codeAuth($loginCode);
+        if(isset($auth['openid'])){
+            $openid = $auth['openid'];
+
+            $user_id = null;
+            if($this->user){
+                $user_id = $this->user['id'];
+            }
+            $data = [
+                "user_id"=>$user_id,
+                "openid"=>$openid,
+                "saveSystemInfo"=>$WxApplet->extractSaveSystemInfo($systemInfo),
+                "locationInfo"=>$WxApplet->extractSaveLocationInfo($locationInfo),
+            ];
+            CMLog("access_applet",$data);
+
+            $data['openid'] = maskString($openid,4,20);  //openid马赛克处理
+            return $this->success("成功",$data);
+        }else{
+            //没有openid
+            return $this->error("非正常渠道打开程序");
+        }
+
     }
      /**
      * 获取指定课程作业id的答案
@@ -468,6 +501,12 @@ class Index extends BaseController
                             if ($this->reportWatchTaskAnswer($course_id, $open_id, $id, $token, $school_host, $answer, $data)) {
                                 if ($arr = json_decode($data, 1)) {
                                     if (isset($arr['code']) && $arr['code'] == 0) {
+                                        CMLog("brush_task",[
+                                            "user_id"=>$this->user['id'],  //user表ID
+                                            "course_id"=>$course_id,  //学期ID
+                                            "open_id"=>$open_id,  //学科ID
+                                            "id"=>$id,  //作业ID
+                                        ]);
                                         return $this->success('刷作业成功');
                                     } else {
                                         return $this->error("[2]" . $arr['msg'] ?: '[2]未知错误');
@@ -548,9 +587,6 @@ class Index extends BaseController
         return true;
     }
 
-    //==========辅助请求方法===========
-    //获取课程详情
-
     /**
      * 刷课时
      */
@@ -570,7 +606,13 @@ class Index extends BaseController
         if ($this->reportWatchLesson($course_id, $open_id, $id, $token, $school_host, $video_time, $data)) {
             if ($arr = json_decode($data, 1)) {
                 if (isset($arr['code']) && $arr['code'] == 0) {
-                    return $this->success('刷课成功！');
+                    CMLog("brush_class",[
+                        "user_id"=>$this->user['id'],  //user表ID
+                        "course_id"=>$course_id,  //学期ID
+                        "open_id"=>$open_id,  //学科ID
+                        "id"=>$id,  //课时ID
+                    ]);
+                    return $this->success('刷课成功');
                 } else {
                     return $this->error($arr['msg'] ?: '未知错误');
                 }

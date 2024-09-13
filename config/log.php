@@ -6,8 +6,6 @@
 return [
     // 默认日志记录通道
     'default'      => env('log.channel', 'file'),
-    // 日志记录级别
-    'level'        => [],
     // 日志类型记录的通道 ['error'=>'email',...]
     'type_channel' => [],
     // 关闭全局日志写入
@@ -17,6 +15,12 @@ return [
 
     // 日志通道列表
     'channels'     => [
+        'CMLog'=>[
+            // 日志记录方式
+            'type'           => app\driver\CMLog::class,
+            // 是否实时写入
+            'realtime_write' => true,
+        ],
         'file' => [
             // 日志记录方式
             'type'           => 'File',
@@ -24,6 +28,8 @@ return [
             'path'           => '',
             // 单文件日志写入
             'single'         => false,
+            // 日志记录级别
+            'level'          => ['error','critical', 'alert', 'emergency','warning'],
             // 独立日志级别
             'apart_level'    => [],
             // 最大日志文件数量

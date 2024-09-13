@@ -6,6 +6,7 @@ namespace app\controller;
 
 use app\BaseController;
 use app\common\JwtAuth;
+use app\common\WxApplet;
 
 class User extends BaseController
 {
@@ -15,6 +16,8 @@ class User extends BaseController
         $password = $request->param("password","");  //密码
         $school_id = $request->param("school_id",0);  //学校ID
         $type = $request->param("type","num");  //登录方式
+        $user_system = $request->param("user_system",[]);  //用户系统信息
+
         if(empty($account) || empty($password)){
              return $this->error("账号/学号或密码不能为空");
         }
@@ -39,11 +42,28 @@ class User extends BaseController
             return $this->error("学校数据列表读取失败");
         }
 
+        //获取openid
+        $WxApplet = new WxApplet();
+        $auth = $WxApplet->codeAuth($user_system['loginCode']);
+        if(!isset($auth['openid'])){
+            //没有openid
+            return $this->error("非小程序登录");
+        }
+
+
         $res = $this->loginFun($type,$account,$password,$school_host,$data);
         if($res){
             $token = JwtAuth::createToken($data['uid']);
             $data['XY_SYSTEM_USER_TOKEN'] = $token;
             $data['password'] = md5($data['password']);
+
+            CMLog("user_login",[
+                "user_id"=>$data['id'],  //user表ID
+                "openid"=>$auth['openid'],
+                "saveSystemInfo"=>$WxApplet->extractSaveSystemInfo($user_system['systemInfo']),
+                "locationInfo"=>$WxApplet->extractSaveLocationInfo($user_system['locationInfo']),
+                "add_time"=>$data['last_login_sys_time'],  //登录时间
+            ]);
             return $this->success("登录成功",$data);
         }else{
             return $this->error($data);

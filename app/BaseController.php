@@ -89,20 +89,36 @@ abstract class BaseController
         $this->redis = cache();
 
         $str = $this->request->controller()."/".$this->request->action();
-        if(in_array($str,$this->login_check_routes)){
-            $token = $this->request->header('Authorization');  //token
-            if(empty($token)){
+        $token = $this->request->header('Authorization');  //token
+        if(empty($token)){
+            if(in_array($str,$this->login_check_routes)){
                 exit($this->error("请先登录"));
+            }else{
+                //不在必登录名单
+                $this->user = false;
             }
+        }else{
             $user_id = JwtAuth::verifyToken($token);
             if(!$user_id || empty($user_id)){
-                exit($this->error("请重新登录"));
+                if(in_array($str,$this->login_check_routes)){
+                    exit($this->error("请重新登录"));
+                }else{
+                    //不在必登录名单
+                    $this->user = false;
+                }
+            }else{
+                $user = User::getByUid($user_id);
+                if(!$user || empty($user)){
+                    if(in_array($str,$this->login_check_routes)){
+                        exit($this->error("登录用户不存在或已被删除"));
+                    }else{
+                        //不在必登录名单
+                        $this->user = false;
+                    }
+                }else{
+                    $this->user = $user->toArray();
+                }
             }
-            $user = User::getByUid($user_id);
-            if(!$user || empty($user)){
-                exit($this->error("登录用户不存在或已被删除"));
-            }
-            $this->user = $user->toArray();
         }
     }
 
@@ -211,10 +227,16 @@ abstract class BaseController
                     }
                     $user = User::getByUid($add['uid']);
                     if(!$user){
-                        $add['user_create_time'] = date("Y-m-d H:i:s");
+                        $date = date("Y-m-d H:i:s");
+                        $add['user_create_time'] = $date;
+                        $add['last_login_sys_time'] = $date;  //最后登录时间
                         $res = User::create($add);
                         if($res){
                             $data = $res->toArray();
+                            CMLog("user_register",[
+                                "user_id"=>$data['id'],  //user表ID
+                                "add_time"=>$date,  //注册时间
+                            ]);
                             return true;
                         }else{
                             $data = "用户入库失败";
