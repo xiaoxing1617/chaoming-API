@@ -2,7 +2,7 @@
 
 
 namespace app\driver;
-use app\model\log;
+use app\model\Log;
 use think\facade\Log as LogFacade;
 use think\contract\LogHandlerInterface;
 
