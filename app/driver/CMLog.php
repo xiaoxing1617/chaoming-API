@@ -109,4 +109,18 @@ class CMLog implements LogHandlerInterface
             "add_time"=>$this->getDate(),
         ]);
     }
+
+    /**
+     * 操作查看试卷答案日志
+     * @param $data
+     */
+    private function view_test_answer($data){
+        $this->log->insert([
+            "type"=>"view_test_answer",
+            "user_id"=>$data['user_id'],
+            "data1"=>$data['testId'], //考试ID
+            "data2"=>$data['orderIndex'], //试卷索引ID
+            "add_time"=>$this->getDate(),
+        ]);
+    }
 }

@@ -88,6 +88,10 @@ abstract class BaseController
         header('Access-Control-Allow-Credentials: true');
         $this->redis = cache();
 
+
+//        exit($this->error("系统维护升级中，预计9.15之前恢复！新版本将新增完善考试答案查看功能及修复部分已知bug，敬请期待。"));
+
+
         $str = $this->request->controller()."/".$this->request->action();
         $token = $this->request->header('Authorization');  //token
         if(empty($token)){
@@ -218,6 +222,11 @@ abstract class BaseController
             $parsed_response = json_decode($response, true);
             if ($parsed_response !== null) {
                 if(intval($parsed_response['code']) === 0){
+                    if($parsed_response['data']['isWeakPassword']){
+                        $data = "检查到您的账号是初始密码（弱密码）！根据监管要求，请先前往登录“朝明在线”修改设置一个强密码再使用本程序。（务必不可重复频繁多次登录，否则会在一段时间内被限制登录）";
+                        return false;
+                    }
+
                     $parsed_response['data']['school_host'] = $school_host;
                     $parsed_response['data']['school_id'] = $school_id;
                     $add = User::buildAddArr($parsed_response['data'],$password);

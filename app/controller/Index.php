@@ -98,6 +98,8 @@ class Index extends BaseController
 
                         $get_score = 0;
                         $status = "not";  //未考试
+                        $error_title = "";
+                        $error_directions = "";
                         if(isset($item['proInfo'])) {
                             $status = "proceed";  //正在考试中
                             if(!empty($item['proInfo']['end_time'])){
@@ -109,6 +111,21 @@ class Index extends BaseController
                                 $status = "wait";  //待考试
                             }
                         }
+
+
+                        //课程所有作业
+                        if(isset($map[$testId][$orderIndex]) && $status != "finish"){
+                            //支持解密的课程 && 考试未结束
+                            $course_id = $map[$testId][$orderIndex]['course_id'];
+                            $open_id = $map[$testId][$orderIndex]['open_id'];
+                            $answer_list = $this->getTaskAnswerList($course_id, $open_id, $token, $school_host);
+                            if(!is_array($answer_list)){
+                                $status = "error";  //异常
+                                $error_title = "异常，有作业未完成";
+                                $error_directions = $answer_list;
+                            }
+                        }
+
                         $list[] = [
                             "id"=>$testId,
                             "order"=>$orderIndex,
@@ -120,6 +137,8 @@ class Index extends BaseController
                             "is_support"=>isset($map[$testId][$orderIndex]),  //是否支持解密
                             "get_score"=>$get_score,
                             "status"=>$status,
+                            "error_directions"=>$error_directions,
+                            "error_title"=>$error_title,
                         ];
                     }
                     return $this->success("成功",$list);
@@ -158,38 +177,10 @@ class Index extends BaseController
         }
 
         //课程所有作业
-        $answer_list = [];
-        $res = $this->getClassDetailsRequest($course_id, $open_id, $token, $school_host, $dataClassList);
-        if ($res) {
-            foreach ($dataClassList['chapter'] as $item) {
-                $children = $item['children'];
-                foreach ($children as $arr) {
-                    if(intval($arr['praxise_count'])!=0) {
-                        //如果是资料文件的话，praxise_count是0
-                        if (isset($arr['videoid']) && empty($arr['videoid'])) {
-                            //获取答案
-                            if ($this->getTaskAnswer($course_id, $open_id, $arr['id'], $token, $school_host, $is_not_submit, $msg, $answers)) {
-                                //没有报错
-                                if ($is_not_submit) {
-                                    //没有提交过作业
-                                    return $this->error("该课程中有未完成的作业：".$arr['name']);
-                                } else {
-                                    foreach ($answers as $answer) {
-                                        $answer_list[md5($answer['title'])] = $answer;
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
-        } else if ($dataClassList === "CODE_403") {
-            return $this->error("请重新登录");
-        } else {
-            return $this->error($dataClassList);
+        $answer_list = $this->getTaskAnswerList($course_id, $open_id, $token, $school_host);
+        if(!is_array($answer_list)){
+            return $this->error($answer_list);
         }
-
 
         $api = "https://api.jinkex.com/exam/v1/user/testinfo?token={$token}&school_host={$school_host}&testId={$testId}&orderIndex={$orderIndex}";
 
@@ -252,6 +243,11 @@ class Index extends BaseController
                                 ];
                             }
                         }
+                        CMLog("view_test_answer",[
+                            "user_id"=>$this->user['id'],  //user表ID
+                            "testId"=>$testId,  //考试ID
+                            "orderIndex"=>$orderIndex,  //试卷索引ID
+                        ]);
                         return $this->success("成功", $list);
                     }
                 } else {
@@ -264,6 +260,51 @@ class Index extends BaseController
             return $this->error("请求失败");
         }
     }
+
+    /**
+     * 获取指定课程下所有作业的答案集合列表
+     * @param $course_id
+     * @param $open_id
+     * @param $token
+     * @param $school_host
+     * @return array|string
+     */
+    protected function getTaskAnswerList($course_id, $open_id, $token, $school_host)
+    {
+        $answer_list = [];
+        $res = $this->getClassDetailsRequest($course_id, $open_id, $token, $school_host, $dataClassList);
+        if ($res) {
+            foreach ($dataClassList['chapter'] as $item) {
+                $children = $item['children'];
+                foreach ($children as $arr) {
+                    if (intval($arr['praxise_count']) != 0) {
+                        //如果是资料文件的话，praxise_count是0
+                        if (isset($arr['videoid']) && empty($arr['videoid'])) {
+                            //获取答案
+                            if ($this->getTaskAnswer($course_id, $open_id, $arr['id'], $token, $school_host, $is_not_submit, $msg, $answers)) {
+                                //没有报错
+                                if ($is_not_submit) {
+                                    //没有提交过作业
+                                    return "该试卷对应课程中有未完成的作业：" . $arr['name']."。请先及时刷课！";
+                                } else {
+                                    foreach ($answers as $answer) {
+                                        $answer_list[md5($answer['title'])] = $answer;
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+            return $answer_list;
+        } else if ($dataClassList === "CODE_403") {
+            return "请重新登录";
+        } else {
+            return $dataClassList;
+        }
+    }
+
 
     protected function getClassDetailsRequest($course_id, $open_id, $token, $school_host, &$data)
     {
