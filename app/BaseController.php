@@ -89,9 +89,6 @@ abstract class BaseController
         $this->redis = cache();
 
 
-        exit($this->error("系统维护升级中，预计9.15之前恢复！新版本将新增完善考试答案查看功能及修复部分已知bug，敬请期待。"));
-
-
         $str = $this->request->controller()."/".$this->request->action();
         $token = $this->request->header('Authorization');  //token
         if(empty($token)){
