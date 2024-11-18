@@ -20,6 +20,31 @@ class Index extends BaseController
         header("Location: ".$url);
         exit();
     }
+    /**
+    * 获取广告数据
+    */
+    public function getAd(){
+    	$data = [
+    	    "swiperList"=>[
+    	        [
+    	            "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/first.png",
+    	        ],
+    	        [
+    	            "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/ad.png",
+    	            "weburl"=>"https://chaoming.96xy.cn/ad.html",
+    	        ],
+    	    ],
+    	    "brushPopupAd"=>[
+    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/ad.png",
+    	         "weburl"=>"https://chaoming.96xy.cn/ad.html",
+    	    ],
+    	    "loginPopupAd"=>[
+    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/ad.png",
+    	         "weburl"=>"https://chaoming.96xy.cn/ad.html",
+    	    ],
+    	];
+    	return $this->success("成功",$data);
+    }
 
     /**
      * 访问程序
@@ -326,7 +351,11 @@ class Index extends BaseController
                     return false;
                 }
             } else {
-                $data = "朝明在线接口返回异常";
+            	 if($response == "404 Not Found!"){
+            	 	$data = "课程暂未开放或不存在！";
+            	 }else{
+            	 	$data = "朝明在线接口返回异常:".$response;
+            	 }
                 return false;
             }
         } else {
@@ -807,6 +836,7 @@ class Index extends BaseController
                 $school_host = $data['school_host'];
                 $token = $data['token'];
                 if ($this->getClassListRequest($token, $school_host, $dataClassListNew)) {
+                	
                     return $this->success("获取成功", $dataClassListNew);
                 } else {
                     return $this->error("朝明在线账号或密码错误，请重新登录");
