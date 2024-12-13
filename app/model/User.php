@@ -13,7 +13,8 @@ class User extends Model
         "last_login_sys_time",
         "user_type",
         "password",
-        "user_create_time"
+        "user_create_time",
+        "is_use",
     ];
 
     public static function buildAddArr($data = [], $pwd = "")

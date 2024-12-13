@@ -35,12 +35,12 @@ class Index extends BaseController
     	        ],
     	    ],
     	    "brushPopupAd"=>[
-    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/ad.png",
-    	         "weburl"=>"https://chaoming.96xy.cn/ad.html",
+    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/xin1.png",
+    	         "weburl"=>"https://chaoming.96xy.cn/xin.html",
     	    ],
     	    "loginPopupAd"=>[
-    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/ad.png",
-    	         "weburl"=>"https://chaoming.96xy.cn/ad.html",
+    	        "image"=>"https://chaomingfuzhu.oss-cn-shanghai.aliyuncs.com/xin1.png",
+    	         "weburl"=>"https://chaoming.96xy.cn/xin.html",
     	    ],
     	];
     	return $this->success("成功",$data);
@@ -183,6 +183,10 @@ class Index extends BaseController
      */
     public function viewTestAnswer()
     {
+    	
+        if(!$this->user['is_use']){
+        	return $this->error("请联系程序开发者进行赞助后可使用！开发者微信号：_xiaoxing1617");
+        }
         //申请开始考试：https://api.jinkex.com/exam/v1/user/enjoin
         //{"school_host":"","token":"","testId":""}
 
@@ -545,6 +549,9 @@ class Index extends BaseController
      */
     public function brushTask()
     {
+    	   if(!$this->user['is_use']){
+        	return $this->error("请联系程序开发者进行赞助后可使用！开发者微信号：_xiaoxing1617");
+        }
         $course_id = intval($this->request->param("course_id", 0));
         $open_id = intval($this->request->param("open_id", 0));
         $id = intval($this->request->param("id", 0));
@@ -662,6 +669,9 @@ class Index extends BaseController
      */
     public function brushClass()
     {
+    	   if(!$this->user['is_use']){
+        	return $this->error("请联系程序开发者进行赞助后可使用！开发者微信号：_xiaoxing1617");
+        }
         $course_id = intval($this->request->param("course_id", 0));
         $open_id = intval($this->request->param("open_id", 0));
         $id = intval($this->request->param("id", 0));
